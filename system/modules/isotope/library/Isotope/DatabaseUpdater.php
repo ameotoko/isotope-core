@@ -12,7 +12,6 @@
 namespace Isotope;
 
 use Contao\Database;
-use Contao\System;
 use Database\Installer;
 
 /**
@@ -28,13 +27,7 @@ class DatabaseUpdater extends Installer
      */
     public function autoUpdateTables($arrTables)
     {
-        $container = System::getContainer();
-
-        $installer = $container->has('contao_installation.database.installer')
-            ? $container->get('contao_installation.database.installer')
-            : $container->get('contao.installer');
-
-        $arrCommands = $installer->getCommands();
+        $arrCommands = $this->compileCommands();
 
         foreach ($arrTables as $strTable) {
 
