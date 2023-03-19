@@ -13,6 +13,7 @@ use Contao\CoreBundle\Exception\AccessDeniedException;
 use Contao\CoreBundle\Exception\InternalServerErrorException;
 use Contao\CoreBundle\Exception\ResponseException;
 use Contao\StringUtil;
+use Contao\System;
 use Contao\Versions;
 use Doctrine\DBAL\Exception\DriverException;
 use Patchwork\Utf8;
@@ -2238,6 +2239,18 @@ class DC_ProductData extends \DC_Table
     }
 
     /**
+     * Set ptable to current table so reviseTable works like in tree mode (delete variants and translations).
+     */
+    protected function reviseTable()
+    {
+        $GLOBALS['TL_DCA'][$this->strTable]['config']['ptable'] = $this->strTable;
+
+        parent::reviseTable();
+
+        unset($GLOBALS['TL_DCA'][$this->strTable]['config']['ptable']);
+    }
+
+    /**
      * Return a select menu that allows to sort results by a particular field
      *
      * @return string
@@ -2459,7 +2472,7 @@ class DC_ProductData extends \DC_Table
                 $option_label = \is_array($GLOBALS['TL_LANG']['MSC'][$field]) ? $GLOBALS['TL_LANG']['MSC'][$field][0] : $GLOBALS['TL_LANG']['MSC'][$field];
             }
 
-            $options_sorter[$option_label . '_' . $field] = '  <option value="' . StringUtil::specialchars($field) . '"' . ((isset($session['search'][$this->strTable]['field']) && $session['search'][$sessionKey]['field'] == $field) ? ' selected="selected"' : '') . '>' . $option_label . '</option>';
+            $options_sorter[$option_label . '_' . $field] = '  <option value="' . StringUtil::specialchars($field) . '"' . ((isset($session['search'][$sessionKey]['field']) && $session['search'][$sessionKey]['field'] == $field) ? ' selected="selected"' : '') . '>' . $option_label . '</option>';
         }
 
         // Sort by option values

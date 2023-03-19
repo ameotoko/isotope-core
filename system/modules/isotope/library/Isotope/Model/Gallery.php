@@ -116,11 +116,11 @@ abstract class Gallery extends TypeAgent
             foreach ($arrCurrent as $i => $image) {
 
                 if (isset($arrTranslate[$image['src']])) {
-                    if ('none' === $arrTranslate[$image['src']]['translate']) {
+                    if ('none' === ($arrTranslate[$image['src']]['translate'] ?? null)) {
                         $arrCurrent[$i] = $arrTranslate[$image['src']];
                     } else {
-                        $arrCurrent[$i]['link']      = $arrTranslate[$image['src']]['link'];
-                        $arrCurrent[$i]['translate'] = $arrTranslate[$image['src']]['translate'];
+                        $arrCurrent[$i]['link']      = $arrTranslate[$image['src']]['link'] ?? '';
+                        $arrCurrent[$i]['translate'] = $arrTranslate[$image['src']]['translate'] ?? '';
                     }
 
                     unset($arrTranslate[$image['src']]);

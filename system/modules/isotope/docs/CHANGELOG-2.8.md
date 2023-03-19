@@ -1,6 +1,28 @@
 Isotope eCommerce Changelog
 ===========================
 
+Version 2.8.10 (2023-02-27)
+--------------------------
+
+- Correctly hide empty fields in address (#2370)
+- Correctly delete variants when deleting product (#2187)
+- Reload the page when updating cart (#2379)
+- Fixed the legacy registered hooks being overwritten by the annotation ones (#2418)
+- Fixed math operation on string (#2417)
+- Fixed multiple PHP8 issues (#2410, #2408, #2407)
+
+
+Version 2.8.9 (2023-01-23)
+--------------------------
+
+- Added "other" to gender (#2390)
+- Add handling for sorting by variant attributes (#2378)
+- Correctly check for default shipping address (#2316)
+- Correctly calculate option prices with price modifier (#2342)
+- Correctly check for guest permissions in Contao 4.13+
+- Fixed various PHP8 warnings
+
+
 Version 2.8.8 (2022-11-01)
 --------------------------
 

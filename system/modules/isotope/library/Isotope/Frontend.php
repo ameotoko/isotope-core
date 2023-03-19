@@ -489,7 +489,7 @@ class Frontend extends \Contao\Frontend
             $objPageDetails = PageModel::findWithDetails($intPage);
 
             // Page is not in the current root
-            if ($objPageDetails->rootId != $objPage->rootId) {
+            if (null === $objPageDetails || $objPageDetails->rootId != $objPage->rootId) {
                 continue;
             }
 
@@ -497,19 +497,24 @@ class Frontend extends \Contao\Frontend
             if ($objPageDetails->guests && $intMember > 0 && !$objPageDetails->protected) {
                 $arrUnavailable[$intMember][] = $intPage;
                 continue;
+            }
 
-            } elseif ($objPageDetails->protected) {
-                // Page is protected but we have no member
-                if ($intMember == 0) {
-                    $arrUnavailable[$intMember][] = $intPage;
-                    continue;
-                }
-
+            if ($objPageDetails->protected) {
                 $arrPGroups = StringUtil::deserialize($objPageDetails->groups);
 
                 // Page is protected but has no groups
                 if (!\is_array($arrPGroups)) {
                     $arrUnavailable[$intMember][] = $intPage;
+                    continue;
+                }
+
+                // Page is protected but we have no member
+                if ($intMember == 0) {
+                    if (in_array(-1, $arrPGroups, false)) { // "Guests" group in Contao 4.13+
+                        $arrAvailable[$intMember][] = $intPage;
+                    } else {
+                        $arrUnavailable[$intMember][] = $intPage;
+                    }
                     continue;
                 }
 
@@ -702,7 +707,7 @@ class Frontend extends \Contao\Frontend
      */
     public function addOptionsPrice($fltPrice, $objSource, $strField, $intTaxClass, array $arrOptions)
     {
-        $fltAmount = $fltPrice;
+        $fltAmount = (float) $fltPrice;
 
         if ($objSource instanceof IsotopePrice
             && ($objProduct = $objSource->getRelated('pid')) instanceof IsotopeProduct
@@ -729,7 +734,8 @@ class Frontend extends \Contao\Frontend
                     /** @var AttributeOption $objOption */
                     foreach ($objOptions as $objOption) {
                         if (\in_array($objOption->getLanguageId(), $value)) {
-                            $amount = $objOption->getAmount($fltPrice, 0);
+                            // Do not use getAmount() for non-percentage price, it would run Isotope::calculatePrice again (see isotope/core#2342)
+                            $amount = $objOption->isPercentage() ? $objOption->getAmount($fltPrice, 0) : (float) $objOption->price;
                             $objTax = $objSource->getRelated('tax_class');
 
                             if ($objOption->isPercentage() || !$objTax instanceof TaxClass) {
@@ -806,9 +812,7 @@ class Frontend extends \Contao\Frontend
      */
     public function replaceIsotopeTags($strTag)
     {
-        $callback = new InsertTag();
-
-        return $callback->replace($strTag);
+        return (new InsertTag())->replace($strTag);
     }
 
     /**
@@ -822,8 +826,7 @@ class Frontend extends \Contao\Frontend
      */
     public function translateProductUrls($arrGet)
     {
-        $listener = new ChangeLanguageListener();
-        return $listener->onTranslateUrlParameters($arrGet);
+        return (new ChangeLanguageListener())->onTranslateUrlParameters($arrGet);
     }
 
     /**
