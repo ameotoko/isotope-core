@@ -626,6 +626,7 @@ $GLOBALS['TL_DCA']['tl_module']['fields']['iso_productcache'] = array
 
 $GLOBALS['TL_DCA']['tl_module']['fields']['iso_notifications'] = array
 (
+    'label'                     => &$GLOBALS['TL_LANG']['tl_module']['nc_notification'],
     'exclude'                   => true,
     'inputType'                 => 'select',
     'options_callback'          => array('NotificationCenter\tl_module', 'getNotificationChoices'),
@@ -657,7 +658,7 @@ $GLOBALS['TL_DCA']['tl_module']['fields']['iso_tsdisplay'] = array
     'default'                   => 'standard',
     'inputType'                 => 'select',
     'options'                   => array('standard', 'custom'),
-    'reference'                 => $GLOBALS['TL_LANG']['tl_module']['iso_tsdisplay'],
+    'reference'                 => &$GLOBALS['TL_LANG']['tl_module']['iso_tsdisplay'],
     'eval'                      => array('mandatory'=>true, 'submitOnChange'=>true, 'tl_class'=>'w50'),
     'sql'                       => "varchar(8) NOT NULL default ''",
 );
@@ -667,7 +668,7 @@ $GLOBALS['TL_DCA']['tl_module']['fields']['iso_tsdirection'] = array
     'exclude'                   => true,
     'inputType'                 => 'select',
     'options'                   => array('topLeft', 'topRight', 'bottomLeft', 'bottomRight'),
-    'reference'                 => $GLOBALS['TL_LANG']['tl_module']['iso_tsdirection'],
+    'reference'                 => &$GLOBALS['TL_LANG']['tl_module']['iso_tsdirection'],
     'eval'                      => array('tl_class'=>'w50'),
     'sql'                       => "varchar(16) NOT NULL default ''",
 );

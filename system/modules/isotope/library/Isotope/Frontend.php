@@ -142,8 +142,11 @@ class Frontend extends \Contao\Frontend
                 // Look for a root page whose domain name matches the host name
                 if (isset($arrPages[$strHost])) {
                     $arrLangs = $arrPages[$strHost];
-                } else {
+                } elseif (isset($arrPages['*'])) {
                     $arrLangs = $arrPages['*']; // Empty domain
+                } else {
+                    // No domain match (see #2347)
+                    return $arrFragments;
                 }
 
                 // Use the first result (see #4872)
@@ -486,7 +489,7 @@ class Frontend extends \Contao\Frontend
             $objPageDetails = PageModel::findWithDetails($intPage);
 
             // Page is not in the current root
-            if ($objPageDetails->rootId != $objPage->rootId) {
+            if (null === $objPageDetails || $objPageDetails->rootId != $objPage->rootId) {
                 continue;
             }
 
@@ -494,19 +497,24 @@ class Frontend extends \Contao\Frontend
             if ($objPageDetails->guests && $intMember > 0 && !$objPageDetails->protected) {
                 $arrUnavailable[$intMember][] = $intPage;
                 continue;
+            }
 
-            } elseif ($objPageDetails->protected) {
-                // Page is protected but we have no member
-                if ($intMember == 0) {
-                    $arrUnavailable[$intMember][] = $intPage;
-                    continue;
-                }
-
+            if ($objPageDetails->protected) {
                 $arrPGroups = StringUtil::deserialize($objPageDetails->groups);
 
                 // Page is protected but has no groups
                 if (!\is_array($arrPGroups)) {
                     $arrUnavailable[$intMember][] = $intPage;
+                    continue;
+                }
+
+                // Page is protected but we have no member
+                if ($intMember == 0) {
+                    if (in_array(-1, $arrPGroups, false)) { // "Guests" group in Contao 4.13+
+                        $arrAvailable[$intMember][] = $intPage;
+                    } else {
+                        $arrUnavailable[$intMember][] = $intPage;
+                    }
                     continue;
                 }
 
@@ -592,8 +600,11 @@ class Frontend extends \Contao\Frontend
         $strLanguage = $strLanguage ?: $objOrder->language;
 
         // Load page configuration
-        if ($objOrder->pageId > 0 && (null === $objPage || $objPage->id != $objOrder->pageId)) {
-            $objPage = PageModel::findWithDetails($objOrder->pageId);
+        if (
+            $objOrder->pageId > 0
+            && (null === $objPage || $objPage->id != $objOrder->pageId)
+            && ($objPage = PageModel::findWithDetails($objOrder->pageId))
+        ) {
             $objPage = static::loadPageConfig($objPage);
         }
 
@@ -617,6 +628,10 @@ class Frontend extends \Contao\Frontend
      */
     public static function loadPageConfig($objPage)
     {
+        if (!\is_object($objPage)) {
+            return $objPage;
+        }
+
         // Use the global date format if none is set
         if ($objPage->dateFormat == '') {
             $objPage->dateFormat = $GLOBALS['TL_CONFIG']['dateFormat'];
@@ -639,10 +654,10 @@ class Frontend extends \Contao\Frontend
 
         // Define the static URL constants
         $isDebugMode = System::getContainer()->getParameter('kernel.debug');
-        \define('TL_FILES_URL', ($objPage->staticFiles != '' && !$isDebugMode) ? $objPage->staticFiles . TL_PATH . '/' : '');
-        \define('TL_ASSETS_URL', ($objPage->staticPlugins != '' && !$isDebugMode) ? $objPage->staticPlugins . TL_PATH . '/' : '');
-        \define('TL_SCRIPT_URL', TL_ASSETS_URL);
-        \define('TL_PLUGINS_URL', TL_ASSETS_URL);
+        self::define('TL_FILES_URL', ($objPage->staticFiles != '' && !$isDebugMode) ? $objPage->staticFiles . TL_PATH . '/' : '');
+        self::define('TL_ASSETS_URL', ($objPage->staticPlugins != '' && !$isDebugMode) ? $objPage->staticPlugins . TL_PATH . '/' : '');
+        self::define('TL_SCRIPT_URL', TL_ASSETS_URL);
+        self::define('TL_PLUGINS_URL', TL_ASSETS_URL);
 
         $objLayout = Database::getInstance()->prepare("
             SELECT l.*, t.templates
@@ -658,7 +673,7 @@ class Frontend extends \Contao\Frontend
             $objPage->templateGroup = $objLayout->templates;
 
             // Store the output format
-            [$strFormat, $strVariant] = explode('_', $objLayout->doctype);
+            [$strFormat, $strVariant] = explode('_', $objLayout->doctype) + [null, null];
             $objPage->outputFormat  = $strFormat;
             $objPage->outputVariant = $strVariant;
         }
@@ -699,7 +714,7 @@ class Frontend extends \Contao\Frontend
      */
     public function addOptionsPrice($fltPrice, $objSource, $strField, $intTaxClass, array $arrOptions)
     {
-        $fltAmount = $fltPrice;
+        $fltAmount = (float) $fltPrice;
 
         if ($objSource instanceof IsotopePrice
             && ($objProduct = $objSource->getRelated('pid')) instanceof IsotopeProduct
@@ -720,13 +735,14 @@ class Frontend extends \Contao\Frontend
                     && $objAttribute->canHavePrices()
                     && ($objOptions = $objAttribute->getOptionsFromManager($objProduct)) !== null
                 ) {
-                    $value = $objAttribute->isCustomerDefined() ? $arrOptions[$field] : $objProduct->$field;
+                    $value = $objAttribute->isCustomerDefined() ? ($arrOptions[$field] ?? null) : $objProduct->$field;
                     $value = StringUtil::deserialize($value, true);
 
                     /** @var AttributeOption $objOption */
                     foreach ($objOptions as $objOption) {
                         if (\in_array($objOption->getLanguageId(), $value)) {
-                            $amount = $objOption->getAmount($fltPrice, 0);
+                            // Do not use getAmount() for non-percentage price, it would run Isotope::calculatePrice again (see isotope/core#2342)
+                            $amount = $objOption->isPercentage() ? $objOption->getAmount($fltPrice, 0) : (float) $objOption->price;
                             $objTax = $objSource->getRelated('tax_class');
 
                             if ($objOption->isPercentage() || !$objTax instanceof TaxClass) {
@@ -803,9 +819,7 @@ class Frontend extends \Contao\Frontend
      */
     public function replaceIsotopeTags($strTag)
     {
-        $callback = new InsertTag();
-
-        return $callback->replace($strTag);
+        return (new InsertTag())->replace($strTag);
     }
 
     /**
@@ -819,8 +833,7 @@ class Frontend extends \Contao\Frontend
      */
     public function translateProductUrls($arrGet)
     {
-        $listener = new ChangeLanguageListener();
-        return $listener->onTranslateUrlParameters($arrGet);
+        return (new ChangeLanguageListener())->onTranslateUrlParameters($arrGet);
     }
 
     /**
@@ -858,5 +871,14 @@ class Frontend extends \Contao\Frontend
         }
 
         System::loadLanguageFile('default', $language, true);
+    }
+
+    private static function define(string $constant_name, $value): void
+    {
+        if (defined($constant_name)) {
+            return;
+        }
+
+        \define($constant_name, $value);
     }
 }

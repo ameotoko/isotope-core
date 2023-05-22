@@ -11,6 +11,7 @@
 
 namespace Isotope\Model;
 
+use Contao\Model;
 use Contao\StringUtil;
 use Contao\System;
 use Isotope\Interfaces\IsotopeOrderableCollection;
@@ -144,7 +145,7 @@ abstract class ProductCollectionSurcharge extends TypeAgent
      * Split tax amount amongst collection products
      *
      * @param IsotopeProductCollection $objCollection
-     * @param \Model                   $objSource
+     * @param Model                    $objSource
      */
     public function applySplittedTax(IsotopeProductCollection $objCollection, $objSource)
     {
@@ -200,7 +201,7 @@ abstract class ProductCollectionSurcharge extends TypeAgent
      *
      * @param array $arrData The data record
      *
-     * @return \Model The model object
+     * @return Model The model object
      */
     public function setRow(array $arrData)
     {
@@ -567,9 +568,9 @@ abstract class ProductCollectionSurcharge extends TypeAgent
      */
     private static function addTax(array &$arrTaxes, $id, $label, $price, $isPercentage, $total, $applyRoundingIncrement, $addToTotal, $notNegative)
     {
-        $objTax = $arrTaxes[$id];
+        $objTax = $arrTaxes[$id] ?? null;
 
-        if (null === $objTax || !($objTax instanceof Tax)) {
+        if (!$objTax instanceof Tax) {
             $objTax                         = new Tax();
             $objTax->label                  = $label;
             $objTax->price                  = $price . ($isPercentage ? '%' : '');

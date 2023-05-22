@@ -212,7 +212,7 @@ class AttributeWizard extends Backend
                 continue;
             }
 
-            if ($arrField['legend'] == '') {
+            if (empty($arrField['legend'])) {
                 $arrField['legend'] = $arrDCA[$arrField['name']]['attributes']['legend'] ?? '';
             }
 
@@ -224,8 +224,8 @@ class AttributeWizard extends Backend
             if (!\is_array($arrField['attributes'] ?? null)
                 || ($arrField['attributes']['legend'] ?? '') == ''
                 || $this->isExcluded($strName, $blnVariants)
-                || ($blnVariants && $arrField['attributes']['inherit'] ?? false)
-                || (!$blnVariants && $arrField['attributes']['variant_option'] ?? false)
+                || ($blnVariants && ($arrField['attributes']['inherit'] ?? false))
+                || (!$blnVariants && ($arrField['attributes']['variant_option'] ?? false))
             ) {
                 continue;
             }

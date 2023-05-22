@@ -206,7 +206,7 @@ abstract class AbstractProductFilter extends Module
      */
     protected function isMultiple($attribute)
     {
-        return (bool) $GLOBALS['TL_DCA']['tl_iso_product']['fields'][$attribute]['eval']['multiple'];
+        return (bool) ($GLOBALS['TL_DCA']['tl_iso_product']['fields'][$attribute]['eval']['multiple'] ?? false);
     }
 
     /**
@@ -242,14 +242,14 @@ abstract class AbstractProductFilter extends Module
             if (null !== $productTypes) {
                 foreach ($productTypes as $type) {
                     foreach ($type->attributes as $attribute => $config) {
-                        if ($config['enabled']) {
+                        if ($config['enabled'] ?? false) {
                             $cache['attributes'][$attribute][] = $type->id;
                         }
                     }
 
                     if ($type->variants) {
                         foreach ($type->variant_attributes as $attribute => $config) {
-                            if ($config['enabled']) {
+                            if ($config['enabled'] ?? false) {
                                 $cache['variant_attributes'][$attribute][] = $type->id;
                             }
                         }
@@ -259,9 +259,9 @@ abstract class AbstractProductFilter extends Module
         }
 
         if ($forVariants) {
-            return (array) $cache['variant_attributes'][$attributeName];
+            return (array) ($cache['variant_attributes'][$attributeName] ?? null);
         }
 
-        return (array) $cache['attributes'][$attributeName];
+        return (array) ($cache['attributes'][$attributeName] ?? null);
     }
 }

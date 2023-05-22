@@ -151,7 +151,7 @@ class ProductList extends Module
         if (!\is_array($arrProducts)) {
             // Display "loading products" message and add cache flag
             if ($this->blnCacheProducts) {
-                $blnCacheMessage = (bool) $this->iso_productcache[$cacheKey];
+                $blnCacheMessage = (bool) ($this->iso_productcache[$cacheKey] ?? false);
 
                 if ($blnCacheMessage && !Input::get('buildCache')) {
                     // Do not index or cache the page
@@ -172,10 +172,10 @@ class ProductList extends Module
 
                 // Decide if we should show the "caching products" message the next time
                 $end = microtime(true) - $start;
-                $this->blnCacheProducts = $end > 1 ? true : false;
+                $this->blnCacheProducts = $end > 1;
 
                 $arrCacheMessage = $this->iso_productcache;
-                if ($blnCacheMessage != $this->blnCacheProducts) {
+                if ($blnCacheMessage !== $this->blnCacheProducts) {
                     $arrCacheMessage[$cacheKey] = $this->blnCacheProducts;
 
                     Database::getInstance()
@@ -255,7 +255,10 @@ class ProductList extends Module
                 && Input::post('AJAX_PRODUCT') == $objProduct->getProductId()
                 && !$this->iso_disable_options
             ) {
-                throw new ResponseException(new Response($objProduct->generate($arrConfig)));
+                $content = $objProduct->generate($arrConfig);
+                $content = Controller::replaceInsertTags($content, false);
+
+                throw new ResponseException(new Response($content));
             }
 
             $objProduct->mergeRow($arrDefaultOptions);
