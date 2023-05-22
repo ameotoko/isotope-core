@@ -13,6 +13,7 @@ namespace Isotope\Model;
 
 use Contao\Database;
 use Contao\MemberModel;
+use Contao\Model;
 use Contao\Model\Collection;
 use Contao\StringUtil;
 use Isotope\Interfaces\IsotopeProduct;
@@ -59,7 +60,7 @@ use Isotope\Translation;
  * @property bool   $enabled
  * @property bool   $groupOnly
  */
-class Rule extends \Model
+class Rule extends Model
 {
     const ROUND_NORMAL = 'normal';
     const ROUND_UP = 'up';
@@ -89,7 +90,7 @@ class Rule extends \Model
      */
     public function isPercentage()
     {
-        return (substr($this->discount, -1) == '%') ? true : false;
+        return '%' === substr($this->discount, -1);
     }
 
     /**
@@ -118,7 +119,7 @@ class Rule extends \Model
 
     public static function findByProduct(IsotopeProduct $objProduct, $strField, $fltPrice)
     {
-        return static::findByConditions(array("type='product'"), array(), array($objProduct), ($strField == 'low_price' ? true : false), array($strField => $fltPrice));
+        return static::findByConditions(array("type='product'"), array(), array($objProduct), 'low_price' === $strField, array($strField => $fltPrice));
     }
 
     public static function findForCart($intId = null)
@@ -227,7 +228,7 @@ class Rule extends \Model
         if (!empty($arrProducts)) {
             $arrProductIds = [0];
             $arrVariantIds = [0];
-            $arrAttributes = [0];
+            $arrAttributes = [];
             $arrTypes = [0];
 
             // Prepare product attribute condition
@@ -285,13 +286,13 @@ class Rule extends \Model
 
             $arrRestrictions = array("productRestrictions='none'");
             $arrRestrictions[] = "(productRestrictions='producttypes' AND productCondition='1' AND (SELECT COUNT(*) FROM tl_iso_rule_restriction WHERE pid=r.id AND type='producttypes' AND object_id IN (" . implode(',', $arrTypes) . "))>0)";
-            $arrRestrictions[] = "(productRestrictions='producttypes' AND productCondition='0' AND (SELECT COUNT(*) FROM tl_iso_rule_restriction WHERE pid=r.id AND type='producttypes' AND object_id IN (" . implode(',', $arrTypes) . "))=0)";
+            $arrRestrictions[] = "(productRestrictions='producttypes' AND productCondition='0' AND (SELECT COUNT(*) FROM tl_iso_rule_restriction WHERE pid=r.id AND type='producttypes' AND NOT object_id IN (" . implode(',', $arrTypes) . "))>0)";
             $arrRestrictions[] = "(productRestrictions='products' AND productCondition='1' AND (SELECT COUNT(*) FROM tl_iso_rule_restriction WHERE pid=r.id AND type='products' AND object_id IN (" . implode(',', $arrProductIds) . "))>0)";
-            $arrRestrictions[] = "(productRestrictions='products' AND productCondition='0' AND (SELECT COUNT(*) FROM tl_iso_rule_restriction WHERE pid=r.id AND type='products' AND object_id IN (" . implode(',', $arrProductIds) . "))=0)";
+            $arrRestrictions[] = "(productRestrictions='products' AND productCondition='0' AND (SELECT COUNT(*) FROM tl_iso_rule_restriction WHERE pid=r.id AND type='products' AND object_id NOT IN (" . implode(',', $arrProductIds) . "))>0)";
             $arrRestrictions[] = "(productRestrictions='variants' AND productCondition='1' AND (SELECT COUNT(*) FROM tl_iso_rule_restriction WHERE pid=r.id AND type='variants' AND object_id IN (" . implode(',', $arrVariantIds) . "))>0)";
-            $arrRestrictions[] = "(productRestrictions='variants' AND productCondition='0' AND (SELECT COUNT(*) FROM tl_iso_rule_restriction WHERE pid=r.id AND type='variants' AND object_id IN (" . implode(',', $arrVariantIds) . "))=0)";
+            $arrRestrictions[] = "(productRestrictions='variants' AND productCondition='0' AND (SELECT COUNT(*) FROM tl_iso_rule_restriction WHERE pid=r.id AND type='variants' AND object_id NOT IN (" . implode(',', $arrVariantIds) . "))>0)";
             $arrRestrictions[] = "(productRestrictions='pages' AND productCondition='1' AND (SELECT COUNT(*) FROM tl_iso_rule_restriction WHERE pid=r.id AND type='pages' AND object_id IN (SELECT page_id FROM " . ProductCategory::getTable() . " WHERE pid IN (" . implode(',', $arrProductIds) . ")))>0)";
-            $arrRestrictions[] = "(productRestrictions='pages' AND productCondition='0' AND (SELECT COUNT(*) FROM tl_iso_rule_restriction WHERE pid=r.id AND type='pages' AND object_id IN (SELECT page_id FROM " . ProductCategory::getTable() . " WHERE pid IN (" . implode(',', $arrProductIds) . ")))=0)";
+            $arrRestrictions[] = "(productRestrictions='pages' AND productCondition='0' AND (SELECT COUNT(*) FROM tl_iso_rule_restriction WHERE pid=r.id AND type='pages' AND object_id NOT IN (SELECT page_id FROM " . ProductCategory::getTable() . " WHERE pid IN (" . implode(',', $arrProductIds) . ")))>0)";
 
             foreach ($arrAttributes as $restriction) {
                 if (empty($restriction['values'])) {

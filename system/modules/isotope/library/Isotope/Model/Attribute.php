@@ -14,6 +14,7 @@ namespace Isotope\Model;
 use Contao\Controller;
 use Contao\Database;
 use Contao\FilesModel;
+use Contao\Model;
 use Contao\StringUtil;
 use Haste\Util\Format;
 use Isotope\Interfaces\IsotopeAttribute;
@@ -413,10 +414,10 @@ abstract class Attribute extends TypeAgent implements IsotopeAttribute
 
         // Generate a HTML table for associative arrays
         if (!array_is_assoc($varValue) && \is_array($varValue[0])) {
-            return $arrOptions['noHtml'] ? $varValue : $this->generateTable($varValue, $objProduct);
+            return ($arrOptions['noHtml'] ?? false) ? $varValue : $this->generateTable($varValue, $objProduct);
         }
 
-        if ($arrOptions['noHtml']) {
+        if ($arrOptions['noHtml'] ?? false) {
             $result = array();
 
             foreach ($varValue as $v1) {
@@ -510,7 +511,7 @@ abstract class Attribute extends TypeAgent implements IsotopeAttribute
     <tr>';
 
         foreach (array_keys($arrValues[0]) as $i => $name) {
-            if ($arrFormat[$name]['doNotShow']) {
+            if ($arrFormat[$name]['doNotShow'] ?? null) {
                 continue;
             }
 
@@ -532,11 +533,11 @@ abstract class Attribute extends TypeAgent implements IsotopeAttribute
             $c = -1;
 
             foreach ($row as $name => $value) {
-                if ($arrFormat[$name]['doNotShow']) {
+                if ($arrFormat[$name]['doNotShow'] ?? null) {
                     continue;
                 }
 
-                if ('price' === $arrFormat[$name]['rgxp']) {
+                if ('price' === $arrFormat[$name]['rgxp'] ?? null) {
                     $intTax = (int) $row['tax_class'];
 
                     $value = Isotope::formatPriceWithCurrency(Isotope::calculatePrice($value, $objProduct, $this->field_name, $intTax));
@@ -765,8 +766,8 @@ abstract class Attribute extends TypeAgent implements IsotopeAttribute
             $arrDCA    = &$GLOBALS['TL_DCA']['tl_iso_product']['fields'];
 
             foreach ($arrDCA as $field => $config) {
-                if ($config['attributes']['dynamic']
-                    || ($config['eval']['multiple'] && !$config['eval']['csv'])
+                if (($config['attributes']['dynamic'] ?? null)
+                    || (($config['eval']['multiple'] ?? null) && !($config['eval']['csv'] ?? null))
                 ) {
                     $arrFields[] = $field;
                 }
@@ -946,9 +947,9 @@ abstract class Attribute extends TypeAgent implements IsotopeAttribute
 
         // Allow to set custom option conditions
         if (!isset($arrOptions['column'])) {
-            $arrOptions['column'] = array();
+            $arrOptions['column'] = [];
         } elseif (!\is_array($arrOptions['column'])) {
-            $arrOptions['column'] = $t.'.'.$arrOptions['column'].'=?';
+            $arrOptions['column'] = [$t.'.'.$arrOptions['column'].'=?'];
         }
 
         $arrOptions['column'][] = "$t.type!=''";
@@ -963,9 +964,9 @@ abstract class Attribute extends TypeAgent implements IsotopeAttribute
      * @param string $strField
      * @param array  $arrOptions
      *
-     * @return \Model|null
+     * @return Model|null
      */
-    public static function findByFieldName($strField, array $arrOptions = array())
+    public static function findByFieldName($strField, array $arrOptions = [])
     {
         if (!isset(static::$arrFieldNameMap[$strField])) {
             $objAttribute = static::findOneBy('field_name', $strField, $arrOptions);

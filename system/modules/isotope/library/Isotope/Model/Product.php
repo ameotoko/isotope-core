@@ -412,7 +412,7 @@ abstract class Product extends TypeAgent implements IsotopeProduct
             }
         }
 
-        $defaultId = $cache[$objProduct->getProductId()];
+        $defaultId = $cache[$objProduct->getProductId()] ?? null;
 
         if ($defaultId < 1 || !\in_array($defaultId, $objProduct->getVariantIds())) {
             return null;
@@ -553,11 +553,26 @@ abstract class Product extends TypeAgent implements IsotopeProduct
                             } else {
                                 $arrData[$strField][$objProduct->id] = 0;
                             }
-                        } else {
-                            $arrData[$strField][$objProduct->id] = strtolower(
-                                str_replace('"', '', $objProduct->$strField)
-                            );
+
+                            continue;
                         }
+
+                        if(
+                            $objProduct->hasVariants()
+                            && !$objProduct->isVariant()
+                            && \in_array($strField, $objProduct->getType()->getVariantAttributes(), true)
+                            && ($defaultVariant = Product::findDefaultVariantOfProduct($objProduct))
+                        ) {
+                            $arrData[$strField][$objProduct->id] = strtolower(
+                                str_replace('"', '', $defaultVariant->$strField)
+                            );
+
+                            continue;
+                        }
+
+                        $arrData[$strField][$objProduct->id] = strtolower(
+                            str_replace('"', '', $objProduct->$strField)
+                        );
                     }
 
                     $arrParam[] = &$arrData[$strField];
@@ -568,7 +583,7 @@ abstract class Product extends TypeAgent implements IsotopeProduct
                 // Add product array as the last item.
                 // This will sort the products array based on the sorting of the passed in arguments.
                 $arrParam[] = &$arrProducts;
-                \call_user_func_array('array_multisort', $arrParam);
+                array_multisort(...$arrParam);
             }
 
             $objProducts = new Collection($arrProducts, static::$strTable);
@@ -622,7 +637,7 @@ abstract class Product extends TypeAgent implements IsotopeProduct
                 str_replace('-', '_', $GLOBALS['TL_LANGUAGE'])
             );
 
-            $arrOptions['group'] = (null === $arrOptions['group'] ? '' : $arrOptions['group'].', ') . 'translation.id';
+            $arrOptions['group'] = (empty($arrOptions['group']) ? '' : $arrOptions['group'].', ') . 'translation.id';
         }
 
         if ($hasVariants) {
@@ -746,7 +761,7 @@ abstract class Product extends TypeAgent implements IsotopeProduct
                 str_replace('-', '_', $GLOBALS['TL_LANGUAGE'])
             );
 
-            $arrOptions['group'] = (null === $arrOptions['group'] ? '' : $arrOptions['group'].', ') . 'translation.id, tl_iso_product.id';
+            $arrOptions['group'] = (!empty($arrOptions['group']) ? $arrOptions['group'].', ' : '') . 'translation.id, tl_iso_product.id';
         }
 
         if ($hasVariants) {

@@ -13,6 +13,8 @@ namespace Isotope\Model;
 
 
 use Contao\Database;
+use Contao\Model;
+use Contao\Model\Collection;
 use Contao\StringUtil;
 
 /**
@@ -38,7 +40,7 @@ use Contao\StringUtil;
  * @property string $shipping_exempt
  * @property bool   $downloads
  */
-class ProductType extends \Model
+class ProductType extends Model
 {
 
     /**
@@ -169,14 +171,14 @@ class ProductType extends \Model
         $arrAttributes = StringUtil::deserialize($varValue, true);
 
         $arrAttributes = array_filter($arrAttributes, function ($a) use ($arrFields) {
-            return ($a['enabled']
-                && \is_array($arrFields[$a['name']])
-                && $arrFields[$a['name']]['attributes']['legend'] != ''
+            return (($a['enabled'] ?? false)
+                && \is_array($arrFields[$a['name']] ?? null)
+                && !empty($arrFields[$a['name']]['attributes']['legend'])
             );
         });
 
         uasort($arrAttributes, function ($a, $b) {
-            return $a["position"] > $b["position"];
+            return $a['position'] > $b['position'];
         });
 
         return array_keys($arrAttributes);
@@ -187,7 +189,7 @@ class ProductType extends \Model
      *
      * @param array $arrOptions
      *
-     * @return \Model\Collection|null
+     * @return Collection|null
      */
     public static function findAllUsed(array $arrOptions = array())
     {

@@ -14,6 +14,7 @@ namespace Isotope\Backend\AttributeOption;
 use Contao\Backend;
 use Contao\BackendUser;
 use Contao\Controller;
+use Contao\CoreBundle\DataContainer\PaletteManipulator;
 use Contao\CoreBundle\Exception\AccessDeniedException;
 use Contao\Database;
 use Contao\Image;
@@ -75,6 +76,10 @@ class Callback extends Backend
 
             if (null === $objAttribute || $objAttribute->isVariantOption()) {
                 unset($GLOBALS['TL_DCA'][AttributeOption::getTable()]['fields']['price']);
+                PaletteManipulator::create()
+                    ->removeField('price')
+                    ->applyToPalette('option', AttributeOption::getTable())
+                ;
             }
         }
     }
@@ -194,7 +199,7 @@ class Callback extends Backend
         $objVersions->initialize();
 
         // Trigger the save_callback
-        if (\is_array($GLOBALS['TL_DCA']['tl_iso_attribute_option']['fields']['published']['save_callback'])) {
+        if (\is_array($GLOBALS['TL_DCA']['tl_iso_attribute_option']['fields']['published']['save_callback'] ?? null)) {
             foreach ($GLOBALS['TL_DCA']['tl_iso_attribute_option']['fields']['published']['save_callback'] as $callback) {
                 if (\is_array($callback)) {
                     $blnVisible = System::importStatic($callback[0])->{$callback[1]}($blnVisible, $this);

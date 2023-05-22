@@ -451,7 +451,7 @@ class Standard extends AbstractProduct implements WeightAggregate, IsotopeProduc
 
         $this->strFormId = (($arrConfig['module'] instanceof ContentElement) ? 'cte' : 'fmd') . $arrConfig['module']->id . '_product_' . $this->getProductId();
 
-        if (!$arrConfig['disableOptions']) {
+        if (!($arrConfig['disableOptions'] ?? false)) {
             $objProduct = $this->validateVariant($loadFallback);
 
             // A variant has been loaded, generate the variant
@@ -533,11 +533,11 @@ class Standard extends AbstractProduct implements WeightAggregate, IsotopeProduc
         $arrProductOptions = array();
         $arrAjaxOptions    = array();
 
-        if (!$arrConfig['disableOptions']) {
+        if (!($arrConfig['disableOptions'] ?? false)) {
             foreach (array_unique(array_merge($this->getType()->getAttributes(), $this->getType()->getVariantAttributes())) as $attribute) {
                 $arrData = $GLOBALS['TL_DCA']['tl_iso_product']['fields'][$attribute];
 
-                if ($arrData['attributes']['customer_defined'] || $arrData['attributes']['variant_option']) {
+                if (($arrData['attributes']['customer_defined'] ?? null) || ($arrData['attributes']['variant_option'] ?? null)) {
 
                     $strWidget = $this->generateProductOptionWidget($attribute, $arrVariantOptions, $arrAjaxOptions, $objWidget);
 
@@ -629,16 +629,16 @@ class Standard extends AbstractProduct implements WeightAggregate, IsotopeProduc
         $objTemplate->formId = $this->getFormId();
         $objTemplate->formSubmit = $this->getFormId();
         $objTemplate->product_id = $this->getProductId();
-        $objTemplate->module_id = $arrConfig['module']->id;
+        $objTemplate->module_id = $arrConfig['module']->id ?? null;
 
         $strTokenName = System::getContainer()->getParameter('contao.csrf_token_name');
         $objTemplate->requestToken = System::getContainer()->get('contao.csrf.token_manager')->getToken($strTokenName)->getValue();
 
-        if (!$arrConfig['jumpTo'] instanceof PageModel || $arrConfig['jumpTo']->iso_readerMode !== 'none') {
+        if (!($arrConfig['jumpTo'] ?? null) instanceof PageModel || $arrConfig['jumpTo']->iso_readerMode !== 'none') {
             $objTemplate->href = $this->generateUrl($arrConfig['jumpTo']);
         }
 
-        if (!$arrConfig['disableOptions']) {
+        if (!($arrConfig['disableOptions'] ?? false)) {
             $GLOBALS['AJAX_PRODUCTS'][] = array('formId' => $this->getFormId(), 'attributes' => $arrAjaxOptions);
         }
 
@@ -680,7 +680,7 @@ class Standard extends AbstractProduct implements WeightAggregate, IsotopeProduc
             $arrData['default'] = $arrDefaults[$strField];
         }
 
-        $arrField = $strClass::getAttributesFromDca($arrData, $strField, $arrData['default'], $strField, static::$strTable, $this);
+        $arrField = $strClass::getAttributesFromDca($arrData, $strField, $arrData['default'] ?? null, $strField, static::$strTable, $this);
 
         // Prepare variant selection field
         // @todo in 3.0: $objAttribute instanceof IsotopeAttributeForVariants
@@ -711,7 +711,7 @@ class Standard extends AbstractProduct implements WeightAggregate, IsotopeProduc
                         } else {
                             $blankOption = $k;
                         }
-                    } elseif (!\in_array($option['value'], $arrOptions) && !$option['group']) {
+                    } elseif (!\in_array($option['value'], $arrOptions) && !($option['group'] ?? false)) {
                         unset($arrField['options'][$k]);
                     }
                 }
@@ -727,8 +727,8 @@ class Standard extends AbstractProduct implements WeightAggregate, IsotopeProduc
 
         if ($objAttribute->isVariantOption()
             || ($objAttribute instanceof IsotopeAttributeWithOptions && $objAttribute->canHavePrices())
-            || $arrData['attributes']['ajax_option']
-            || $arrField['attributes']['ajax_option'] // see https://github.com/isotope/core/issues/2096
+            || ($arrData['attributes']['ajax_option'] ?? null)
+            || ($arrField['attributes']['ajax_option'] ?? null) // see https://github.com/isotope/core/issues/2096
         ) {
             $arrAjaxOptions[] = $strField;
         }
@@ -736,7 +736,7 @@ class Standard extends AbstractProduct implements WeightAggregate, IsotopeProduc
         // Convert optgroups so they work with FormSelectMenu
         // @deprecated Remove in Isotope 3.0, the options should match for frontend if attribute is customer defined
         if (
-            \is_array($arrField['options'])
+            \is_array($arrField['options'] ?? null)
             && array_is_assoc($arrField['options'])
             && \count(
                 array_filter(
@@ -796,7 +796,7 @@ class Standard extends AbstractProduct implements WeightAggregate, IsotopeProduc
                 }
 
                 // Trigger the save_callback
-                if (\is_array($arrData['save_callback'])) {
+                if (\is_array($arrData['save_callback'] ?? null)) {
                     foreach ($arrData['save_callback'] as $callback) {
                         try {
                             if (\is_array($callback)) {
@@ -822,6 +822,8 @@ class Standard extends AbstractProduct implements WeightAggregate, IsotopeProduc
                     }
                 }
             }
+        } elseif (isset($_GET[$strField]) && empty(Input::post('FORM_SUBMIT')) && !$objAttribute->isVariantOption()) {
+            $this->arrCustomerConfig[$strField] = $objWidget->value = Input::get($strField);
         }
 
         $wizard = '';
@@ -868,7 +870,7 @@ class Standard extends AbstractProduct implements WeightAggregate, IsotopeProduc
         }
 
         // Add a custom wizard
-        if (\is_array($arrData['wizard'])) {
+        if (\is_array($arrData['wizard'] ?? null)) {
             foreach ($arrData['wizard'] as $callback) {
                 $wizard .= System::importStatic($callback[0])->{$callback[1]}($this);
             }
@@ -907,7 +909,7 @@ class Standard extends AbstractProduct implements WeightAggregate, IsotopeProduc
 
             if (Input::post('FORM_SUBMIT') == $this->getFormId() && \in_array(Input::post($attribute), $arrValues)) {
                 $arrOptions[$attribute] = Input::post($attribute);
-            } elseif (Input::post('FORM_SUBMIT') == '' && \in_array($arrDefaults[$attribute], $arrValues)) {
+            } elseif (Input::post('FORM_SUBMIT') == '' && isset($arrDefaults[$attribute]) && \in_array($arrDefaults[$attribute], $arrValues)) {
                 $arrOptions[$attribute] = $arrDefaults[$attribute];
             } elseif (\count($arrValues) == 1) {
                 $arrOptions[$attribute] = $arrValues[0];
@@ -1029,7 +1031,7 @@ class Standard extends AbstractProduct implements WeightAggregate, IsotopeProduc
     public function mergeRow(array $arrData)
     {
         // do not allow to reset the whole record
-        if ($arrData['id']) {
+        if (isset($arrData['id'])) {
             return $this;
         }
 
@@ -1054,7 +1056,7 @@ class Standard extends AbstractProduct implements WeightAggregate, IsotopeProduc
         }
 
         if (!\in_array($strKey, $arrAttributes, true)
-            && '' !== (string) $GLOBALS['TL_DCA'][static::$strTable]['fields'][$strKey]['attributes']['legend']
+            && '' !== (string) ($GLOBALS['TL_DCA'][static::$strTable]['fields'][$strKey]['attributes']['legend'] ?? '')
         ) {
             return;
         }

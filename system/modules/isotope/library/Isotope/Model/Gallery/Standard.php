@@ -273,11 +273,11 @@ class Standard extends Gallery implements IsotopeGallery
         $objTemplate->name       = $this->getName();
         $objTemplate->product_id = $this->product_id;
         $objTemplate->file       = $arrFile;
-        $objTemplate->src        = $arrFile[$strType];
-        $objTemplate->size       = $arrFile[$strType . '_size'];
+        $objTemplate->src        = $arrFile[$strType] ?? '';
+        $objTemplate->size       = $arrFile[$strType . '_size'] ?? '';
         $objTemplate->alt        = $arrFile['alt'];
         $objTemplate->title      = $arrFile['desc'];
-        $objTemplate->class      = trim($this->arrData['class'] . ' ' . $arrFile['class']);
+        $objTemplate->class      = trim(($this->arrData['class'] ?? '') . ' ' . ($arrFile['class'] ?? ''));
 
         // Add the missing data to the picture
         $arrFile['picture']['alt']   = $objTemplate->alt;
@@ -294,7 +294,7 @@ class Standard extends Gallery implements IsotopeGallery
 
             case 'lightbox':
                 $arrFile = $this->getImageForType('lightbox', $arrFile, $blnWatermark);
-                [$link, $rel] = explode('|', $arrFile['link'], 2);
+                [$link, $rel] = explode('|', $arrFile['link'], 2) + [null, null];
                 $attributes = ($rel ? ' data-lightbox="' . $rel . '"' : ' target="_blank"');
 
                 $objTemplate->hasLink    = true;
@@ -399,8 +399,8 @@ class Standard extends Gallery implements IsotopeGallery
             $arrFile[$strType . '_imageSize'] = $arrSize;
         }
 
-        $arrFile['alt']     = StringUtil::specialchars($arrFile['alt'], true);
-        $arrFile['desc']    = StringUtil::specialchars($arrFile['desc'], true);
+        $arrFile['alt']     = StringUtil::specialchars($arrFile['alt'] ?? '', true);
+        $arrFile['desc']    = StringUtil::specialchars($arrFile['desc'] ?? '', true);
         $arrFile['picture'] = $picture;
 
         $arrFile[$strType] = TL_ASSETS_URL . $strImage;
