@@ -15,7 +15,6 @@ use Contao\Controller;
 use Contao\Environment;
 use Contao\Input;
 use Contao\StringUtil;
-use Contao\System;
 use Isotope\Isotope;
 use Isotope\Message;
 use Isotope\Model\Rule;
@@ -68,9 +67,6 @@ class Coupons extends Module
         $this->Template->coupons = $coupons;
         $this->Template->inputLabel = $GLOBALS['TL_LANG']['MSC']['couponLabel'];
         $this->Template->sLabel = $GLOBALS['TL_LANG']['MSC']['couponApply'];
-
-        $strTokenName = System::getContainer()->getParameter('contao.csrf_token_name');
-        $this->Template->requestToken = System::getContainer()->get('contao.csrf.token_manager')->getToken($strTokenName)->getValue();
     }
 
     private function addCoupon($coupon, array &$coupons)

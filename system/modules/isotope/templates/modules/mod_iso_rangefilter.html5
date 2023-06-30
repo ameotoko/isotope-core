@@ -47,7 +47,7 @@ $this->block('content');
 <form id="<?= $this->formId ?>" method="post">
     <div class="formbody">
         <input type="hidden" name="FORM_SUBMIT" value="<?= $this->formId ?>">
-        <input type="hidden" name="REQUEST_TOKEN" value="<?= $this->requestToken ?>">
+        <input type="hidden" name="REQUEST_TOKEN" value="{{request_token}}">
 
         <?php foreach ($this->fields as $config): ?>
         <div id="slider-<?= $config['id'] ?>-<?= $this->id ?>">
