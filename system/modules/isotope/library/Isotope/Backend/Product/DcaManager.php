@@ -326,12 +326,12 @@ class DcaManager extends Backend
             foreach ($arrFields as $name => $arrField) {
                 if (\in_array($name, $arrEnabled)) {
 
-                    if ($arrField['inputType'] == '') {
+                    if (empty($arrField['inputType']) && empty($arrField['input_field_callback'])) {
                         continue;
                     }
 
                     // Variant fields can only be edited in variant mode
-                    if (null !== $arrAttributes[$name]
+                    if (isset($arrAttributes[$name])
                         && !$blnVariants
                         && /* @todo in 3.0: $arrAttributes[$name] instanceof IsotopeAttributeForVariants
                         && */$arrAttributes[$name]->isVariantOption()
